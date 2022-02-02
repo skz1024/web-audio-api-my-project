@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>web audio api music player?</title>
+  <link rel="stylesheet" href="index.css">
+</head>
+<body>
+  <div class="main-box">
+    <div class="time-box">
+      <div class="time-box-name"></div>
+      <div class="time-box-time"></div>
+      <div class="time-box-background">
+        <div class="time-box-meter"></div>
+        <div class="time-box-circle"></div>
+      </div>
+    </div>
+    <div class="menu-box">
+      <button class="menu-play"><img src="menu-play.png" alt=""></button>
+      <button class="menu-pause"><img src="menu-pause.png" alt=""></button>
+      <button class="menu-stop"><img src="menu-stop.png" alt=""></button>
+    </div>
+    <div class="advance-box">
+      <div class="equalizer-box-70hz">
+        <div class="equalizer-box-70hz-meter"></div>
+        <div class="equalizer-box-70hz-circle"></div>
+        <div class="box-text">70</div>
+      </div>
+      <div class="equalizer-box-150hz">
+        <div class="equalizer-box-150hz-meter"></div>
+        <div class="equalizer-box-150hz-circle"></div>
+        <div class="box-text">150</div>
+      </div>
+      <div class="equalizer-box-300hz">
+        <div class="equalizer-box-300hz-meter"></div>
+        <div class="equalizer-box-300hz-circle"></div>
+        <div class="box-text">300</div>
+      </div>
+      <div class="equalizer-box-600hz">
+        <div class="equalizer-box-600hz-meter"></div>
+        <div class="equalizer-box-600hz-circle"></div>
+        <div class="box-text">600</div>
+      </div>
+      <div class="equalizer-box-1500hz">
+        <div class="equalizer-box-1500hz-meter"></div>
+        <div class="equalizer-box-1500hz-circle"></div>
+        <div class="box-text">1.5k</div>
+      </div>
+      <div class="equalizer-box-3000hz">
+        <div class="equalizer-box-3000hz-meter"></div>
+        <div class="equalizer-box-3000hz-circle"></div>
+        <div class="box-text">3k</div>
+      </div>
+      <div class="equalizer-box-6000hz">
+        <div class="equalizer-box-6000hz-meter"></div>
+        <div class="equalizer-box-6000hz-circle"></div>
+        <div class="box-text">6k</div>
+      </div>
+      <div class="equalizer-box-12000hz">
+        <div class="equalizer-box-12000hz-meter"></div>
+        <div class="equalizer-box-12000hz-circle"></div>
+        <div class="box-text">12k</div>
+      </div>
+      <div class="echo-box-volume">
+        <div class="echo-box-volume-meter"></div>
+        <div class="echo-box-volume-circle"></div>
+        <div class="box-text">echo</div>
+      </div>
+      <div class="echo-box-feedback">
+        <div class="echo-box-feedback-meter"></div>
+        <div class="echo-box-feedback-circle"></div>
+        <div class="box-text">fb</div>
+      </div>
+      <div class="echo-box-convolver">
+        <div class="echo-box-convolver-meter"></div>
+        <div class="echo-box-convolver-circle"></div>
+        <div class="box-text">con</div>
+      </div>
+      <div class="master-box-volume">
+        <div class="master-box-volume-meter"></div>
+        <div class="master-box-volume-circle"></div>
+        <div class="box-text">vol</div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+<script>
+let fileName = '04 - Stage 1 - Graveyard.mp3'
+let audio = new Audio(fileName)
+
+// button을 눌렀을 때 동작하는 함수들...
+let playButton = document.querySelector('.menu-play')
+playButton.addEventListener('click', (e) => {
+  audioContext.resume()
+  audio.play()
+})
+
+let stopButton = document.querySelector('.menu-stop')
+stopButton.addEventListener('click', (e) => {
+  audioContext.suspend()
+  audio.pause()
+})
+
+// web audio api
+let audioContext = new AudioContext()
+let audioBox = createAudioBox()
+
+function createAudioBox () {
+  const setHz = [70, 150, 300, 600, 1500, 3000, 6000, 12000]
+  let audioElement = audioContext.createMediaElementSource(audio)
+  let startGain = audioContext.createGain()
+  let hzGain = []
+  let hzFilter = []
+  let echoGain = audioContext.createGain()
+  echoGain.gain.value = 0.25
+  let echoDelay = audioContext.createDelay(1)
+  echoDelay.delayTime.value = 0.25
+  let echoFeedbackGain = audioContext.createGain()
+  echoFeedbackGain.gain.value = 0.25
+  let echoConvolver = audioContext.createConvolver()
+  let echoConvolverGain = audioContext.createGain()
+  echoConvolverGain.gain.value = 0.25
+  let echoConvolverBuffer = audioContext.createBuffer(1, 48000, 48000)
+  let editBuffer = echoConvolverBuffer.getChannelData(0)
+  for (let i = 0; i < editBuffer.length; i++) {
+    // convolver buffer를 설정할 때 단순히 Math.random() 으로 하게되면,
+    // audio의 일부분을 재생할 때 문제가 되는것을 확인했습니다.
+    // 따라서 밑의 공식을 사용해 주세요.
+    editBuffer[i] = (1 - (Math.random() * 2)) * (1 - (i / editBuffer.length))
+  }
+  echoConvolver.buffer = echoConvolverBuffer
+  let masterGain = audioContext.createGain()
+  masterGain.gain.value = 1
+
+  for (let i = 0; i < 8; i++) {
+    hzGain.push(audioContext.createGain())
+    hzFilter.push(audioContext.createBiquadFilter())
+    hzGain[i].gain.value = 0.5
+    hzFilter[i].frequency.value = setHz[i]
+    hzFilter[i].type = 'bandpass'
+
+    startGain.connect(hzFilter[i]).connect(hzGain[i]).connect(masterGain) 
+  }
+
+  audioElement.connect(startGain)
+  startGain.connect(echoDelay).connect(echoGain).connect(masterGain)
+  echoDelay.connect(echoFeedbackGain).connect(echoDelay)
+  // startGain.connect(echoConvolver).connect(masterGain) // 이 기능을 사용할 때 오디오 재생에 일부 문제가 있습니다.
+  masterGain.connect(audioContext.destination)
+
+  return {
+    startGain: startGain,
+    audioElement: audioElement,
+    hzGain: hzGain,
+    hzFilter: hzFilter,
+    echoGain: echoGain,
+    echoDelay: echoDelay,
+    echoFeedbackGain: echoFeedbackGain,
+    echoConvolverGain: echoConvolverGain,
+    masterGain: masterGain
+  }
+}
+
+
+// timeBox 관련 변수들...
+let timeBoxTime = document.querySelector('.time-box-time')
+
+let timeBoxMeter = document.querySelector('.time-box-meter')
+let timeBoxBackground = document.querySelector('.time-box-background')
+let timeBoxCircle = document.querySelector('.time-box-circle')
+
+// 화면에 출력할 내용을 실시간으로 표시합니다. 
+// requestAnimationFrame을 사용하면 브라우저가 알아서 일정시간마다 화면을 갱신해줍니다.
+function animation () {
+  // 보정치 계산: 시간 미터바에 있는 원형모양의 위치를 조절하기 위해 css의 값을 computedStyle 함수를 이용해 가져와 계산합니다.
+  // 그 다음 화면 바깥으로 원형모양을 나가지 않게 하도록 위치를 조정해두었습니다.
+  // 보정치: timeBoxCircle의 width 나누기 2
+  // leftPixel: 해당 픽셀만큼 원형을 왼쪽으로 이동시켜서 막대바의 끝부분에 가운데에 위치하도록 했습니다.
+  let correction = parseFloat(getComputedStyle(timeBoxCircle).width) / 2
+  let leftPixel = parseFloat(getComputedStyle(timeBoxMeter).width) - correction
+  if (leftPixel < 0) {
+    leftPixel = 0
+  } else if (leftPixel > parseFloat(getComputedStyle(timeBoxBackground).width) - (correction * 2)) {
+    leftPixel = parseFloat(getComputedStyle(timeBoxBackground).width) - (correction * 2)
+  }
+
+  // 계산한 위치값을 css의 style을 통해 수정합니다.
+  timeBoxCircle.style.left = leftPixel + 'px'
+  let percent = (audio.currentTime / audio.duration) * 100
+  timeBoxMeter.style.width = percent + '%'
+
+  // 실시간 텍스트 내용의 변경
+  let outputText = `${audio.currentTime.toFixed(2)} / ${audio.duration.toFixed(2)} (${percent.toFixed(2)}%)`
+  timeBoxTime.textContent = outputText
+
+  // audioContext 관련
+  for (let i = 0; i < equalizerDiv.gain.length; i++) {
+    audioBox.hzGain[i].gain.value = equalizerDiv.gain[i]
+  }
+  audioBox.echoConvolverGain.gain.value = echoDiv.value.convolverGain
+  audioBox.echoFeedbackGain.gain.value = echoDiv.value.feedback
+  audioBox.echoGain.gain.value = echoDiv.value.gain
+  audioBox.masterGain.gain.value = masterDiv.value.gain
+  requestAnimationFrame(animation) // requestAnimation 함수는 재귀호출을 해야 실시간으로 함수를 불러올 수 있습니다.
+}
+requestAnimationFrame(animation)
+
+// 시간박스의 값 변경을 허용하는지 알아보는 변수입니다.
+// 마우스 클릭을 하거나 클릭을 한 상태에서 드래그하면 시간박스의 값 변경을 허용합니다.
+let isTimeBoxBackgroundChange = false
+timeBoxBackground.addEventListener('mousedown', (e) => {
+  isTimeBoxBackgroundChange = true
+  if (isTimeBoxBackgroundChange) {
+    timeBoxMeterChange(e.offsetX)
+  }
+})
+timeBoxBackground.addEventListener('mouseup', (e) => {
+  isTimeBoxBackgroundChange = false
+})
+timeBoxBackground.addEventListener('mousemove', (e) => {
+  if (isTimeBoxBackgroundChange) {
+    timeBoxMeterChange(e.offsetX)
+  }
+})
+
+function timeBoxMeterChange (mouseOffsetX) {
+  let percent = mouseOffsetX / timeBoxBackground.clientWidth
+  audio.currentTime = (audio.duration * percent)
+}
+
+let timeBoxName = document.querySelector('.time-box-name')
+timeBoxName.textContent = fileName
+
+// 이퀄라이저 객체 변수를 생성합니다.
+// css 쿼리를 불러오는데 반복되는 구문이 많아 반복문으로 코드길이를 줄였습니다.
+let equalizerDiv = createEqualizer()
+function createEqualizer () {
+  const setHz = [70, 150, 300, 600, 1500, 3000, 6000, 12000] // 이퀄라이저의 기본 hz 값입니다.
+  let equalizerBox = [] // 상자 쿼리
+  let equalizerMeter = [] // 미터 쿼리
+  let equalizerCircle = [] // 서클 쿼리(원모양막대)
+  let equalizerGain = []
+
+  for (let i = 0; i < 8; i++) {
+    // 각 배열의 데이터에 해당 쿼리에 해당하는 div를 객체에 집어넣습니다.
+    equalizerBox.push(document.querySelector(`.equalizer-box-${setHz[i]}hz`))
+    equalizerMeter.push(document.querySelector(`.equalizer-box-${setHz[i]}hz-meter`))
+    equalizerCircle.push(document.querySelector(`.equalizer-box-${setHz[i]}hz-circle`))
+    equalizerGain.push(0.5)
+
+    // 그 다음, addEventListner로 이벤트들을 전부 추가합니다.
+    equalizerBox[i].addEventListener('mousedown', (e) => {
+      this.isChange = true
+      divValueChange(equalizerBox[i], equalizerMeter[i], equalizerCircle[i], e.offsetY)
+      equalizerGain[i] = parseFloat(equalizerMeter[i].style.height) / 100
+    })
+    equalizerBox[i].addEventListener('mousemove', (e) => {
+      if (this.isChange) {
+        divValueChange(equalizerBox[i], equalizerMeter[i], equalizerCircle[i], e.offsetY)
+        equalizerGain[i] = parseFloat(equalizerMeter[i].style.height) / 100
+      }
+    })
+    equalizerBox[i].addEventListener('mouseup', (e) => {
+      this.isChange = false
+    })
+  }
+
+  return {
+    hz: setHz,
+    box: equalizerBox,
+    meter: equalizerMeter,
+    circle: equalizerCircle,
+    gain: equalizerGain
+  }
+}
+
+function divValueChange(equalizerBox, equalizerMeter, equalizerCircle, mouseOffsetY) {
+  let percent = 1 - (mouseOffsetY / equalizerBox.clientHeight)
+  let equalizerMaxHeight = parseFloat(getComputedStyle(equalizerBox).height)
+  let circleHeight = parseFloat(getComputedStyle(equalizerCircle).height)
+  let bottomMax = equalizerMaxHeight
+  let bottom = (parseFloat(getComputedStyle(equalizerBox).height) * percent)
+
+  if (bottom + circleHeight >= bottomMax) {
+    bottom = bottomMax - circleHeight
+  } else if (bottom < 0) {
+    bottom = 0
+  }
+
+  if (percent <= 0) percent = 0
+
+  equalizerMeter.style.height = (percent * 100) + '%'
+  equalizerCircle.style.bottom = bottom + 'px'
+}
+
+
+let echoDiv = createEchoDiv()
+function createEchoDiv () {
+  let convolverBox = document.querySelector('.echo-box-convolver')
+  let convolverMeter = document.querySelector('.echo-box-convolver-meter')
+  let convolverCircle = document.querySelector('.echo-box-convolver-circle')
+  let gainBox = document.querySelector('.echo-box-volume')
+  let gainMeter = document.querySelector('.echo-box-volume-meter')
+  let gainCircle = document.querySelector('.echo-box-volume-circle')
+  let feedbackGainBox = document.querySelector('.echo-box-feedback')
+  let feedbackGainMeter = document.querySelector('.echo-box-feedback-meter')
+  let feedbackGainCircle = document.querySelector('.echo-box-feedback-circle')
+  let value = { convolverGain: 0.5, gain: 0.25, feedback: 0.25 }
+
+  convolverBox.addEventListener('mousedown', (e) => {
+    this.isChange = true
+    divValueChange(convolverBox, convolverMeter, convolverCircle, e.offsetY)
+    value.convolverGain = parseFloat(convolverMeter.style.height) / 100 
+  })
+  convolverBox.addEventListener('mousemove', (e) => {
+    if (this.isChange) {
+      divValueChange(convolverBox, convolverMeter, convolverCircle, e.offsetY)
+      value.convolverGain = parseFloat(convolverMeter.style.height) / 100 
+    }
+  })
+  convolverBox.addEventListener('mouseup', (e) => {
+    this.isChange = false
+  })
+
+  gainBox.addEventListener('mousedown', (e) => {
+    this.isChange = true
+    divValueChange(gainBox, gainMeter, gainCircle, e.offsetY)
+    value.gain = parseFloat(gainMeter.style.height) / 200 
+  })
+  gainBox.addEventListener('mousemove', (e) => {
+    if (this.isChange) {
+      divValueChange(gainBox, gainMeter, gainCircle, e.offsetY)
+      value.gain = parseFloat(gainMeter.style.height) / 200 
+    }
+  })
+  gainBox.addEventListener('mouseup', (e) => {
+    this.isChange = false
+  })
+
+  feedbackGainBox.addEventListener('mousedown', (e) => {
+    this.isChange = true
+    divValueChange(feedbackGainBox, feedbackGainMeter, feedbackGainCircle, e.offsetY)
+    value.feedback = parseFloat(feedbackGainMeter.style.height) / 200 
+  })
+  feedbackGainBox.addEventListener('mousemove', (e) => {
+    if (this.isChange) {
+      divValueChange(feedbackGainBox, feedbackGainMeter, feedbackGainCircle, e.offsetY)
+      value.feedback = parseFloat(feedbackGainMeter.style.height) / 200 
+    }
+  })
+  feedbackGainBox.addEventListener('mouseup', (e) => {
+    this.isChange = false
+  })
+
+  return {
+    convolverBox: convolverBox,
+    convolverMeter: convolverMeter,
+    convolverCircle: convolverCircle,
+    gainBox: gainBox,
+    gainMeter: gainMeter,
+    gainCircle: gainCircle,
+    feedbackBox: feedbackGainBox,
+    feedbackMeter: feedbackGainMeter,
+    feedbackCircle: feedbackGainCircle,
+    value: value
+  }
+}
+
+let masterDiv = createMasterDiv()
+function createMasterDiv () {
+  let box = document.querySelector('.master-box-volume')
+  let meter = document.querySelector('.master-box-volume-meter')
+  let circle = document.querySelector('.master-box-volume-circle')
+  let value = { gain:1 }
+  box.addEventListener('mousedown', (e) => {
+    this.isChange = true
+    divValueChange(box, meter, circle, e.offsetY)
+    value.gain = parseFloat(meter.style.height) / 50 
+  })
+  box.addEventListener('mousemove', (e) => {
+    if (this.isChange) {
+      divValueChange(box, meter, circle, e.offsetY)
+      value.gain = parseFloat(meter.style.height) / 50 
+    }
+  })
+  box.addEventListener('mouseup', (e) => {
+    this.isChange = false
+  })
+
+  return {
+    box: box,
+    meter: meter,
+    circle: circle,
+    value: value
+  }
+}
+</script>
