@@ -98,10 +98,16 @@ playButton.addEventListener('click', (e) => {
   audio.play()
 })
 
+let pauseButton = document.querySelector('.menu-pause')
+pauseButton.addEventListener('click', (e) => {
+  audio.pause()
+})
+
 let stopButton = document.querySelector('.menu-stop')
 stopButton.addEventListener('click', (e) => {
   audioContext.suspend()
   audio.pause()
+  audio.currentTime = 0
 })
 
 // web audio api
