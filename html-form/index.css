@@ -55,6 +55,8 @@ div.time-box-name {
   background-color: white;
   border: 1px solid black;
   height: 5vh;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 div.time-box-time {
   color: blueviolet;
@@ -244,6 +246,10 @@ equalizer와 같은 구성입니다.
   pointer-events: none;
 }
 
+/* 
+이퀄라이저의 값가 에코 종류의 값을 표시합니다.
+글씨를 작게 해놓았지만, 모니터 해상도가 작으면 글씨가 잘리는듯...
+*/
 .box-text {
   font-size: small;
   font-weight: bold;
