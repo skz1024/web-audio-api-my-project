@@ -1,0 +1,260 @@
+/* 배경 이미지 */
+body {
+  /* background-image는 src 폴더 내에 있어야 합니다. */
+  background-image: url('clouds-4215608_1920.jpg');
+  background-repeat: no-repeat;
+  background-position: center;
+  background-attachment: fixed;
+  background-size: cover;
+}
+
+/* 메인박스(오디오 플레이어 전체의 내용이 담겨져있다.) */
+div.main-box {
+  box-sizing: border-box;
+  max-width: 480px;
+  width: 60vw;
+  margin: 0 auto;
+}
+
+
+/* 메뉴박스: display 옵션은 flex로 해서 컨텐츠가 왼쪽으로 정렬되게 했습니다. */
+div.menu-box {
+  /* max-width: 480px; */
+  display: flex;
+  box-sizing: border-box;
+}
+
+/* 메뉴박스에 사용하는 버튼입니다. */
+button.menu-play, button.menu-stop, button.menu-pause {
+  background-color: lightblue;
+  padding: 0;
+  width: 20vw;
+  max-height: 20vw;
+}
+
+/* 버튼을 눌렀을 때 트랜지션을 사용해 배경색이 밝게 변경되는것으로 버튼이 눌리는듯한 에니메이션을 만들었습니다. */
+button.menu-play:active, button.menu-stop:active, button.menu-pause:active {
+  transition-duration: 0.1s;
+  background-color: white
+}
+
+img {
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+div.time-box {
+  display: block;
+  box-sizing: border-box;
+}
+div.time-box-name {
+  text-align: center;
+  color: blue;
+  text-shadow: 2px 2px 10px blue;
+  background-color: white;
+  border: 1px solid black;
+  height: 5vh;
+}
+div.time-box-time {
+  color: blueviolet;
+  text-align: center;
+  text-shadow: 4px 4px 10px blueviolet;
+  background-color: white;
+  border: 1px solid black;
+  height: 5vh;
+}
+div.time-box-background {
+  position: relative;
+  background-color: silver;
+  border-color: rgb(37, 37, 37);
+  border-width: 2px;
+  border-style: solid;
+  box-sizing: border-box;
+  height: 5vh;
+  z-index: 0;
+}
+div.time-box-meter {
+  height: 100%;
+  z-index: 4;
+  position: absolute;
+  border: none;
+  box-sizing: border-box;
+  background-color: lime;
+  overflow: hidden;
+}
+div.time-box-circle {
+  overflow: visible;
+  z-index: 5;
+  position: absolute;
+  background-color: green;
+  border-radius: 50%;
+  width: 2vh;
+  height: 4vh;
+  top: 0%;
+  overflow: hidden;
+  box-sizing: border-box;
+  border: 4px solid darkgreen;
+
+  /*
+  pointer-events: none 을 설정하면 해당 클래스를 사용한 태그에 클릭 이벤트가 반응하지 않게됩니다.
+  이 값을 설정하지 않을경우, 마우스이벤트가 발생할 때 이 객체도 마우스 이벤트를 받게되어
+  time-box-background에서 원(time-box-circle)을 클릭하면 값을 제대로 읽어오지 않습니다. (클릭 이벤트 좌표를 읽어오지 못함_
+  */
+  pointer-events: none;
+}
+
+.advance-box {
+  max-width: 480px;
+  display: flex;
+  /*
+  참고
+  flex 이벤트를 하위 객체에다가도 사용할 때, 상위 객체가 정한 크기를 초과하는 문제가 발생합니다.
+  왜냐하면 하위 객체의 flex는 상위 객체의 width, height의 영향을 무시하고 독자적인 공간을 차지합니다.
+  이 문제를 해결하는 방법은 2가지가 있습니다.
+  1. flex를 연속으로 쓰지 말것
+  2. max-width, max-height를 이용한 강제 조정
+  그래서 advance-box를 구성할 때 box안에다가 객체를 넣는걸 포기하고 advance-box 안에 모든 객체를 넣었습니다.
+  
+  하지만, 이전에 코드를 작성할때 객체의 이름을 정할 때는 이 문제를 생각하지 못한 채로 작성되었기 때문에
+  equalizer-70hz 라는 클래스명이 아니라 equalizer-box-70hz 라는 형태로 클래스 이름이 작성되었습니다.
+  
+  결론은, flex 이벤트를 하위 이벤트에다가도 중첩해서 사용하면 상위 객체가 정한 크기를 초과하므로 사용하지 마세요.
+  */
+}
+.equalizer-box-70hz, .equalizer-box-150hz, .equalizer-box-300hz, .equalizer-box-600hz,
+.equalizer-box-1500hz, .equalizer-box-3000hz, .equalizer-box-6000hz, .equalizer-box-12000hz {
+  /* 
+  막대바를 표기합니다. 
+  이 막대바 위에 meter(크기 표시해주는거), circle(원모양 막대) 를 표시해야 하므로
+  이 객체의 position 은 relative 입니다.
+  */
+  position: relative;
+  width: 5vw;
+  height: 20vh;
+  background-color: grey;
+  box-sizing: border-box;
+  border: 1px solid black;
+  max-width: 40px;
+}
+.equalizer-box-70hz-meter, .equalizer-box-150hz-meter, .equalizer-box-300hz-meter, .equalizer-box-600hz-meter,
+.equalizer-box-1500hz-meter, .equalizer-box-3000hz-meter, .equalizer-box-6000hz-meter, .equalizer-box-12000hz-meter {
+  /*
+  meter는, height를 사용하여 현재 값을 표시하는 용도로 구현했습니다.
+  아래에서, 위로 그래프의 값이 상승해야 하기 때문에 position: absolute가 되고, bottom: 0 으로 설정되었습니다.
+  meter, circle은 pointer-events: none 으로 해야 상위 객체에서 클릭 이벤트를 제대로 받을 수 있습니다.
+  */
+  position: absolute;
+  background: rgb(255,248,123);
+  background: linear-gradient(to bottom ,rgb(255,248,123), rgb(125, 199, 51));
+  width: 100%;
+  height: 50%;
+  bottom: 0;
+  pointer-events: none;
+}
+.equalizer-box-70hz-circle, .equalizer-box-150hz-circle, .equalizer-box-300hz-circle, .equalizer-box-600hz-circle,
+.equalizer-box-1500hz-circle, .equalizer-box-3000hz-circle, .equalizer-box-6000hz-circle, .equalizer-box-12000hz-circle {
+  /*
+  막대바에 걸쳐있는 원형 모양의 막대입니다.
+  왠지 이게 있어야, 막대바를 조절할 수 있는 느낌이 들어서 넣었습니다.
+  */
+  position: absolute;
+  background-color: orange;
+  width: 100%;
+  height: 10%;
+  bottom: 50%;
+  box-sizing: border-box;
+  border-color: black;
+  border-width: 2px;
+  border-style: solid;
+  border-radius: 20%;
+  pointer-events: none;
+}
+
+/*
+equalizer와 같은 구성입니다.
+*/
+.echo-box-volume, .echo-box-feedback, .echo-box-convolver {
+  position: relative;
+  width: 5vw;
+  max-width: 40px;
+  height: 20vh;
+  background-color: grey;
+  box-sizing: border-box;
+  border: 1px solid black;
+}
+.echo-box-volume-meter, .echo-box-feedback-meter {
+  position: absolute;
+  background: linear-gradient(to bottom, #6ed7fa, #257386);
+  width: 100%;
+  height: 50%;
+  bottom: 0;
+  pointer-events: none;
+}
+.echo-box-convolver-meter {
+  position: absolute;
+  background: linear-gradient(to bottom, #5456a3, #0a8af3);
+  width: 100%;
+  height: 50%;
+  bottom: 0;
+  pointer-events: none;
+}
+.echo-box-volume-circle, .echo-box-feedback-circle, .echo-box-convolver-circle {
+  position: absolute;
+  background-color: forestgreen;
+  width: 100%;
+  height: 10%;
+  bottom: 50%;
+  box-sizing: border-box;
+  border-color: black;
+  border-width: 2px;
+  border-style: solid;
+  border-radius: 20%;
+  pointer-events: none;
+}
+
+.master-box-volume {
+  position: relative;
+  width: 5vw;
+  max-width: 40px;
+  height: 20vh;
+  background-color: gray;
+  box-sizing: border-box;
+  border: 1px solid black;
+}
+.master-box-volume-meter {
+  position: absolute;
+  background: linear-gradient(to bottom, #b27fc7, #20002c);
+  width: 100%;
+  height: 50%;
+  bottom: 0;
+  pointer-events: none;
+}
+.master-box-volume-circle {
+  position: absolute;
+  background-color: purple;
+  width: 100%;
+  height: 10%;
+  bottom: 50%;
+  box-sizing: border-box;
+  border-color: black;
+  border-width: 2px;
+  border-style: solid;
+  border-radius: 20%;
+  pointer-events: none;
+}
+
+.box-text {
+  font-size: small;
+  font-weight: bold;
+  text-align: center;
+  position: absolute;
+  z-index: 3;
+  width: 5vw;
+  max-width: 40px;
+  overflow: hidden;
+  bottom: -20px;
+  pointer-events: none;
+}
+
