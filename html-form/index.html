@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>web audio api music player?</title>
+  <title>web audio api music player v0.2</title>
   <link rel="stylesheet" href="index.css">
 </head>
 <body>
@@ -172,6 +172,7 @@ function createAudioBox () {
   // 이퀄라이저를 쉽게 수정하기 위한 함수
   // hzGain[i].gain.value를 통해서도 직접 값을 변경할 수 있지만, 그 과정은 직관적이지 않음.
   // 편의상 hz에 배열의 인덱스를 넣는것도 허용함.
+  // 가급적이면 percent함수로 넣는것을 추천...
   let setEqualizer = function (hzOrIndex, gain) {
     if (gain >= 2) gain = 2
 
@@ -272,25 +273,30 @@ function timeBoxMeterChange (mouseOffsetX) {
 }
 
 function timeBoxMeterDisplay () {
-  // 보정치 계산: 시간 미터바에 있는 원형모양의 위치를 조절하기 위해 css의 값을 computedStyle 함수를 이용해 가져와 계산합니다.
-  // 그 다음 화면 바깥으로 원형모양을 나가지 않게 하도록 위치를 조정해두었습니다.
-  // 보정치: timeBoxCircle의 width 나누기 2
-  // leftPixel: 해당 픽셀만큼 원형을 왼쪽으로 이동시켜서 막대바의 끝부분에 가운데에 위치하도록 했습니다.
-  let circleWidthHalf = parseFloat(getComputedStyle(timeBoxCircle).width) / 2
-  let timeBoxMeterWidth = parseFloat(getComputedStyle(timeBoxMeter).width)
-  let timeBoxBackgroundWidth = parseFloat(getComputedStyle(timeBoxBackground).width)
-  let leftPx = timeBoxMeterWidth - circleWidthHalf
+  // 원래는 getComputedStyle을 이용해서 직접 css width 값을 불러왔으나
+  // 생각해보니까 부모의 position이 relative라 %값만 가지고도 div의 위치를 조정할 수가 있어
+  // 기존 코드를 삭제하고 %값 으로만 css의 위치값을 변경하였습니다.
+  let percent = (audio.currentTime / audio.duration) * 100
 
-  // 만약, 왼쪽 끝이나 오른쪽 끝을 넘기게 될경우 circle은 강제로 끝을 넘기지 않도록 이동됩니다.
-  if (leftPx < 0) {
-    leftPx = 0
-  } else if (leftPx > timeBoxBackgroundWidth - (circleWidthHalf * 2)) {
-    leftPx = timeBoxBackgroundWidth - (circleWidthHalf * 2)
+  // timeboxcircle의 (width percent / 2)의 값 (이 %값은 getComputedStyle로 가져올 수 없음.)
+  // inline css를 쓴다면 모르겠으나, css파일로 작성한탓에, %값을 가져올 수 없어 수동으로 집적 값을 넣었습니다.
+  const CIRCLE_HALF_PERCENT = 1
+  const CIRCLE_WIDTH_PERCENT = 2
+  // CIRCLE_HALF_PERCENT는 circle의 위치를 조정하기 위한 %값을 정의하는 변수입니다.
+  // 막대바의 중앙에 위치해야 하기 때문에 circle_width % 값을 2로 나눈값을 퍼센트로 적용하였습니다.
+  // value / 2 = 중심값
+  // 그리고, 정해진 div의 영역을 초과할 수 없게 하기 위해, 
+  // circlePercent의 값은 100 - CIRCLE_WIDTH_PERCENT 을 초과할 수 없습니다.
+  // 즉, 100%을 초과하면 안됩니다. 0% 미만도 안됩니다.
+  let circlePercent = percent - CIRCLE_HALF_PERCENT
+  if (circlePercent > 100 - CIRCLE_WIDTH_PERCENT) {
+    circlePercent = 100 - CIRCLE_WIDTH_PERCENT
+  } else if (circlePercent < 0) {
+    circlePercent = 0
   }
 
   // 계산한 위치값을 css의 style을 통해 수정합니다.
-  timeBoxCircle.style.left = leftPx + 'px'
-  let percent = (audio.currentTime / audio.duration) * 100
+  timeBoxCircle.style.left = circlePercent + '%'
   timeBoxMeter.style.width = percent + '%'
 }
 
@@ -314,7 +320,6 @@ function audioBoxAutoChange () {
 }
 
 // 화면에 출력할 내용을 실시간으로 표시합니다. 
-// requestAnimationFrame을 사용하면 브라우저가 알아서 일정시간마다 화면을 갱신해줍니다.
 function animation () {
   timeBoxMeterDisplay()
   timeBoxNameDisplay()
@@ -374,24 +379,30 @@ function createEqualizer () {
 // 사용자가 마우스클릭을 한 후에, div 객체의 css 크기 값을 변경합니다.
 function divBoxValueChange(box, meter, circle, mouseOffsetY) {
   // 값이 1 - (mouseOffsetY / box.clientHeight) 인 이유는 아래서부터 그래프값이 증가해야 하기 때문입니다.
-  let percent = 1 - (mouseOffsetY / box.clientHeight)
-  let boxMaxHeight = parseFloat(getComputedStyle(box).height)
-  let circleHeight = parseFloat(getComputedStyle(circle).height)
-  let bottomMax = boxMaxHeight
-  let bottom = boxMaxHeight * percent
+  let percent = (1 - (mouseOffsetY / box.clientHeight)) * 100
 
-  // circle의 위치가 box 영역을 초과할 수 없도록 보정합니다.
-  if (bottom + circleHeight >= bottomMax) {
-    bottom = bottomMax - circleHeight
-  } else if (bottom < 0) {
-    bottom = 0
-  }
+  // CIRCLE_HEIGHT_PERCENT의 값은 css파일에 작성되어있어서, 사용자가 직접 수동으로 값을 넣었습니다.
+  const CIRCLE_HEIGHT_PERCENT = 10
+  const CIRCLE_HEIGHT_HALF_PERCENT = 5
+  let circlePercent = percent - CIRCLE_HEIGHT_HALF_PERCENT
 
   // 퍼센트가 0미만일경우 오류가 발생하는 경우가 있어, 퍼센트가 0미만이 되지 않도록 했습니다.
-  if (percent <= 0) percent = 0
+  // 그리고 퍼센트의 값이 100을 초과하지 않도록 했습니다.
+  if (percent >= 100) {
+    percent = 100
+  } else if (percent <= 0) {
+    percent = 0
+  }
 
-  meter.style.height = (percent * 100) + '%'
-  circle.style.bottom = bottom + 'px'
+  // circle의 위치가 box 영역을 초과할 수 없도록 보정합니다.
+  if (circlePercent >= 100 - CIRCLE_HEIGHT_PERCENT) {
+    circlePercent = 100 - CIRCLE_HEIGHT_PERCENT
+  } else if (circlePercent <= 0) {
+    circlePercent = 0
+  }
+
+  meter.style.height = percent + '%'
+  circle.style.bottom = circlePercent + '%'
 }
 
 // 에코 설정 변수... 사실 equalizer랑 거의 똑같은 형태

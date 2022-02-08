@@ -91,8 +91,8 @@ div.time-box-circle {
   position: absolute;
   background-color: green;
   border-radius: 50%;
-  width: 2vh;
-  height: 4vh;
+  width: 2%;
+  height: 100%;
   top: 0%;
   overflow: hidden;
   box-sizing: border-box;
