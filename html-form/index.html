@@ -63,9 +63,9 @@
         <div class="equalizer-box-12000hz-circle"></div>
         <div class="box-text">12k</div>
       </div>
-      <div class="echo-box-volume">
-        <div class="echo-box-volume-meter"></div>
-        <div class="echo-box-volume-circle"></div>
+      <div class="echo-box-echo">
+        <div class="echo-box-echo-meter"></div>
+        <div class="echo-box-echo-circle"></div>
         <div class="box-text">echo</div>
       </div>
       <div class="echo-box-feedback">
@@ -166,7 +166,7 @@ function createAudioBox () {
   audioElement.connect(startGain)
   startGain.connect(echoDelay).connect(echoGain).connect(masterGain)
   echoDelay.connect(echoFeedbackGain).connect(echoDelay)
-  startGain.connect(echoConvolver).connect(masterGain)
+  startGain.connect(echoConvolver).connect(echoConvolverGain).connect(masterGain)
   masterGain.connect(audioContext.destination)
   
   // 이퀄라이저를 쉽게 수정하기 위한 함수
@@ -411,9 +411,9 @@ function createEchoDiv () {
   let convolverBox = document.querySelector('.echo-box-convolver')
   let convolverMeter = document.querySelector('.echo-box-convolver-meter')
   let convolverCircle = document.querySelector('.echo-box-convolver-circle')
-  let gainBox = document.querySelector('.echo-box-volume')
-  let gainMeter = document.querySelector('.echo-box-volume-meter')
-  let gainCircle = document.querySelector('.echo-box-volume-circle')
+  let gainBox = document.querySelector('.echo-box-echo')
+  let gainMeter = document.querySelector('.echo-box-echo-meter')
+  let gainCircle = document.querySelector('.echo-box-echo-circle')
   let feedbackGainBox = document.querySelector('.echo-box-feedback')
   let feedbackGainMeter = document.querySelector('.echo-box-feedback-meter')
   let feedbackGainCircle = document.querySelector('.echo-box-feedback-circle')
