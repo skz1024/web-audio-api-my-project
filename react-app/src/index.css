@@ -57,6 +57,7 @@ div.time-box-name {
   height: 5vh;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
 div.time-box-time {
   color: blueviolet;
@@ -92,7 +93,7 @@ div.time-box-circle {
   background-color: green;
   border-radius: 50%;
   width: 2%;
-  height: 4vh;
+  height: 100%;
   top: 0%;
   overflow: hidden;
   box-sizing: border-box;

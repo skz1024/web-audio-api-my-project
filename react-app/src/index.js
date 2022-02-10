@@ -1,7 +1,6 @@
-import React, { createRef, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
 import './index.css';
-import App from './App';
 import reportWebVitals from './reportWebVitals';
 
 /* 참고사항
@@ -20,8 +19,8 @@ let fileName = 'devilish - 05 - Stage 2 - Clock Tower.mp3'
 let audio = new Audio(fileName)
 audio.loop = true
 
-// 오디오 컨텍스트를 간편하게 관리하기 위한 팩토리 메소드
 let audioBox = createAudioBox()
+// 오디오 컨텍스트를 간편하게 관리하기 위한 팩토리 메소드
 function createAudioBox () {
   const setHz = [70, 150, 300, 600, 1500, 3000, 6000, 12000] // 기분 hz 값
   let audioElement = audioContext.createMediaElementSource(audio)
@@ -33,11 +32,11 @@ function createAudioBox () {
 
   // echo effect
   let echoGain = audioContext.createGain()
-  echoGain.gain.value = 0.5
+  echoGain.gain.value = 0.25
   let echoDelay = audioContext.createDelay(1)
   echoDelay.delayTime.value = 0.25
   let echoFeedbackGain = audioContext.createGain()
-  echoFeedbackGain.gain.value = 0.5
+  echoFeedbackGain.gain.value = 0.25
   let echoConvolver = audioContext.createConvolver()
   let echoConvolverGain = audioContext.createGain()
   echoConvolverGain.gain.value = 0.5
@@ -78,6 +77,7 @@ function createAudioBox () {
   // 이퀄라이저를 쉽게 수정하기 위한 함수
   // hzGain[i].gain.value를 통해서도 직접 값을 변경할 수 있지만, 그 과정은 직관적이지 않음.
   // 편의상 hz에 배열의 인덱스를 넣는것도 허용함.
+  // 가급적이면 percent함수로 넣는것을 추천...
   let setEqualizer = function (hzOrIndex, gain) {
     if (gain >= 2) gain = 2
 
@@ -102,12 +102,16 @@ function createAudioBox () {
       case 'echo': echoGain.gain.value = gain; break
       case 'feedback': echoFeedbackGain.gain.value = gain; break
       case 'convolver': echoConvolverGain.gain.value = gain; break
-      default: break
+      default:
     }
   }
   let setEchoPercent = function (type, percent) {
     if (percent >= 200) percent = 200
-    let inputGain = (percent / 100) * 0.5
+
+    let inputGain = (percent / 100)
+    if (type === 'echo' || type === 'feedback') {
+      inputGain *= 0.5
+    }
     setEcho(type, inputGain)
   }
 
@@ -285,6 +289,27 @@ function TimeBox (props) {
     }
   }
 
+  function eventTouchStart (e) {
+    // torchEvent는 offsetX, offsetY가 없기 때문에 event.target.getBoundingClientRect()를 통해
+    // 사각형의 값을 얻어온 후에, 다음과 같은 계산을 해야 합니다.
+    // offsetX = e.touches[0].clientX - rect.left
+    // 참고: 이 예제는 스크롤을 사용하지 않아서 pageOffsetX를 계산하지 않았습니다.
+    setIsChange(true)
+    const rect = e.target.getBoundingClientRect()
+    percentChange(e.touches[0].clientX - rect.left)
+  }
+
+  function eventTouchMove (e) {
+    if (isChange) {
+      const rect = e.target.getBoundingClientRect()
+      percentChange(e.touches[0].clientX - rect.left)
+    }
+  }
+
+  function eventTouchEnd () {
+    setIsChange(false)
+  }
+
   function percentChange (mouseOffset) {
     // 아까 사용한 useRef로 current객체로 timeBoxBackgroundRef에 접근을 해서 해당 객체에 직접 접근을 할 수 있습니다.
     let percent = mouseOffset / timeBoxBackgroundRef.current.clientWidth
@@ -329,7 +354,10 @@ function TimeBox (props) {
       <div className='time-box-background' 
         onMouseDown={eventMouseDown} 
         onMouseMove={eventMouseMove} 
-        onMouseUp={eventMouseUp} 
+        onMouseUp={eventMouseUp}
+        onTouchStart={eventTouchStart}
+        onTouchMove={eventTouchMove}
+        onTouchEnd={eventTouchEnd}
         ref={timeBoxBackgroundRef}
       >
         <div className='time-box-meter' ref={timeBoxMeterRef}></div>
@@ -398,6 +426,27 @@ function MeterBox (props) {
     setIsChange(false)
   }
 
+  function eventTouchStart (e) {
+    // torchEvent는 offsetX, offsetY가 없기 때문에 event.target.getBoundingClientRect()를 통해
+    // 사각형의 값을 얻어온 후에, 다음과 같은 계산을 해야 합니다.
+    // offsetX = e.touches[0].clientX - rect.left
+    // 참고: 이 예제는 스크롤을 사용하지 않아서 pageOffsetX를 계산하지 않았습니다.
+    setIsChange(true)
+    const rect = e.target.getBoundingClientRect()
+    meterChange(e.touches[0].clientY - rect.top)
+  }
+
+  function eventTouchMove (e) {
+    if (isChange) {
+      const rect = e.target.getBoundingClientRect()
+      meterChange(e.touches[0].clientY - rect.top)
+    }
+  }
+
+  function eventTouchEnd () {
+    setIsChange(false)
+  }
+
   function meterChange (mouseOffsetY) {
     // 값이 1 - (mouseOffsetY / box.clientHeight) 인 이유는 아래서부터 그래프값이 증가해야 하기 때문입니다.
     // timeBox랑 동일한 형식으로, ref를 통해 가져온 Dom은 current 객체를 사용해서 기능을 사용합니다.
@@ -445,6 +494,9 @@ function MeterBox (props) {
       onMouseDown={eventMouseDown}
       onMouseMove={eventMouseMove}
       onMouseUp={eventMouseUp}
+      onTouchStart={eventTouchStart}
+      onTouchMove={eventTouchMove}
+      onTouchEnd={eventTouchEnd}
       ref={meterBoxRef}
     >
       <div className={classNameValue + '-meter'} ref={meterBoxMeterRef}></div>
