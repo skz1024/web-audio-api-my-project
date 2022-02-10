@@ -16,9 +16,16 @@ boxType = "equalizer", boxValue = "70hz" -> equalizer-70hz
 v-bind:class 에다가 = 를 안붙이면 에러남...
 
 <template>
-  <div v-bind:class="getClassName(boxType, boxValue)" @mousedown="mouseDownEvent" @mousemove="mouseMoveEvent" @mouseup="mouseUpEvent">
-    <div v-bind:class="getClassName(boxType, boxValue, 'meter')"></div>
-    <div v-bind:class="getClassName(boxType, boxValue, 'circle')"></div>
+  <div v-bind:class="getClassName(boxType, boxValue)" 
+    @mousedown="eventMouseDown" 
+    @mousemove="eventMouseMove"
+    @mouseup="eventMouseUp"
+    @touchstart="eventTouchStart"
+    @touchmove="eventTouchMove"
+    @touchEnd="eventTouchEnd"
+    ref="meterBox">
+    <div v-bind:class="getClassName(boxType, boxValue, 'meter')" ref="meterBoxMeter"></div>
+    <div v-bind:class="getClassName(boxType, boxValue, 'circle')" ref="meterBoxCircle"></div>
     <div class="box-text">{{boxText}}</div>
   </div>
 </template>
@@ -40,47 +47,66 @@ export default {
         return boxType + '-' + boxValue
       }
     },
-    mouseDownEvent(e) {
+    eventMouseDown(e) {
       this.isChange = true
-      this.changePercent(e)
+      this.changePercent(e.offsetY)
     },
-    mouseUpEvent() {
+    eventMouseUp() {
       this.isChange = false
     },
-    mouseMoveEvent(e) {
+    eventMouseMove(e) {
       if (this.isChange) {
-        this.changePercent(e)
+        this.changePercent(e.offsetY)
       }
     },
-    changePercent(e) {
-      // className 앞부분에 . 이 붙는것은 css선택자를 사용해서 엘리먼트를 불러오기 때문입니다.
-      // 박스 길이를 기준으로, 마우스 클릭한 위치가 어느 퍼센트 구간인지를 계산하는 과정입니다.
-      // 이것저것 참고해야할 값들이 많아 공식이 지나치게 복잡해져버렸습니다.
-      let className = '.' + this.getClassName(this.boxType, this.boxValue)
-      let boxElement = document.querySelector(className)
-      let maxHeight = parseFloat(getComputedStyle(boxElement).height)
-      let percent = 1 - (e.offsetY / maxHeight)
-      let circleClassName = '.' + this.getClassName(this.boxType, this.boxValue, 'circle')
-      let circleElement = document.querySelector(circleClassName)
-      let circleHeight = parseFloat(getComputedStyle(circleElement).height)
-      let bottomPx = (maxHeight * percent)
+    eventTouchStart(e) {
+      // torchEvent는 offsetX, offsetY가 없기 때문에 event.target.getBoundingClientRect()를 통해
+      // 사각형의 값을 얻어온 후에, 다음과 같은 계산을 해야 합니다.
+      // offsetY = e.touches[0].clientY - rect.top
+      // 참고: 이 예제는 스크롤을 사용하지 않아서 pageOffsetX를 계산하지 않았습니다.
+      const rect = e.target.getBoundingClientRect()
+      this.isChange = true
+      this.changePercent(e.touches[0].clientY - rect.top)
+    },
+    eventTouchMove(e) {
+      if (this.isChange) {
+        const rect = e.target.getBoundingClientRect()
+        this.changePercent(e.touches[0].clientY - rect.top)
+      }
+    },
+    eventTouchEnd() {
+      this.isChange = false
+    },
+    changePercent(mouseOffsetY) {
+      // 값이 1 - (mouseOffsetY / box.clientHeight) 인 이유는 아래서부터 그래프값이 증가해야 하기 때문입니다.
+      let percent = (1 - (mouseOffsetY / this.$refs.meterBox.clientHeight)) * 100
 
-      // 만약 bottomPx가 영역을 벗어나게 될 경우, bottomPx는 영역을 벗어나지 않도록 조정됩니다.
-      if (bottomPx + circleHeight >= maxHeight) {
-        bottomPx = maxHeight - circleHeight
-      } else if (bottomPx < 0) {
-        bottomPx = 0
+      // CIRCLE_HEIGHT_PERCENT의 값은 css파일에 작성되어있어서, 사용자가 직접 수동으로 값을 넣었습니다.
+      const CIRCLE_HEIGHT_PERCENT = 10
+      const CIRCLE_HEIGHT_HALF_PERCENT = 5
+      let circlePercent = percent - CIRCLE_HEIGHT_HALF_PERCENT
+
+      // 퍼센트가 0미만일경우 오류가 발생하는 경우가 있어, 퍼센트가 0미만이 되지 않도록 했습니다.
+      // 그리고 퍼센트의 값이 100을 초과하지 않도록 했습니다.
+      if (percent >= 100) {
+        percent = 100
+      } else if (percent <= 0) {
+        percent = 0
       }
 
-      // percent가 음수가 되는것을 막습니다.
-      if (percent < 0) percent = 0
+      // circle의 위치가 box 영역을 초과할 수 없도록 보정합니다.
+      if (circlePercent >= 100 - CIRCLE_HEIGHT_PERCENT) {
+        circlePercent = 100 - CIRCLE_HEIGHT_PERCENT
+      } else if (circlePercent <= 0) {
+        circlePercent = 0
+      }
 
-      let meterClassName = '.' + this.getClassName(this.boxType, this.boxValue, 'meter')
-      let meterElement = document.querySelector(meterClassName)
-      meterElement.style.height = (percent * 100) + '%'
-      circleElement.style.bottom = bottomPx + 'px'
+      this.$refs.meterBoxMeter.style.height = percent + '%'
+      this.$refs.meterBoxCircle.style.bottom = circlePercent + '%'
 
-      this.$emit('changeValue', this.boxType, this.boxValue, percent)
+      // 부모 요소의 audioBoxChange를 호출하기 위해 emit으로 audioBoxChange 요소 이름을 전달합니다.
+      // 이 함수는 meterBox -> advanceBox -> App.Js 순으로 정보를 전달합니다.
+      this.$emit('audioBoxChange', this.boxType, this.boxValue, percent)
     }
   }
 }

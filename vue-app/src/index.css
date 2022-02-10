@@ -1,6 +1,5 @@
 /* 배경 이미지 */
 body {
-  /* background-image는 src 폴더 내에 있어야 합니다. */
   background-image: url('clouds-4215608_1920.jpg');
   background-repeat: no-repeat;
   background-position: center;
@@ -56,6 +55,9 @@ div.time-box-name {
   background-color: white;
   border: 1px solid black;
   height: 5vh;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 div.time-box-time {
   color: blueviolet;
@@ -90,8 +92,8 @@ div.time-box-circle {
   position: absolute;
   background-color: green;
   border-radius: 50%;
-  width: 2vh;
-  height: 4vh;
+  width: 2%;
+  height: 100%;
   top: 0%;
   overflow: hidden;
   box-sizing: border-box;
@@ -175,7 +177,7 @@ div.time-box-circle {
 /*
 equalizer와 같은 구성입니다.
 */
-.echo-box-volume, .echo-box-feedback, .echo-box-convolver {
+.echo-box-echo, .echo-box-feedback, .echo-box-convolver {
   position: relative;
   width: 5vw;
   max-width: 40px;
@@ -184,7 +186,7 @@ equalizer와 같은 구성입니다.
   box-sizing: border-box;
   border: 1px solid black;
 }
-.echo-box-volume-meter, .echo-box-feedback-meter {
+.echo-box-echo-meter, .echo-box-feedback-meter {
   position: absolute;
   background: linear-gradient(to bottom, #6ed7fa, #257386);
   width: 100%;
@@ -200,7 +202,7 @@ equalizer와 같은 구성입니다.
   bottom: 0;
   pointer-events: none;
 }
-.echo-box-volume-circle, .echo-box-feedback-circle, .echo-box-convolver-circle {
+.echo-box-echo-circle, .echo-box-feedback-circle, .echo-box-convolver-circle {
   position: absolute;
   background-color: forestgreen;
   width: 100%;
@@ -245,6 +247,10 @@ equalizer와 같은 구성입니다.
   pointer-events: none;
 }
 
+/* 
+이퀄라이저의 값가 에코 종류의 값을 표시합니다.
+글씨를 작게 해놓았지만, 모니터 해상도가 작으면 글씨가 잘리는듯...
+*/
 .box-text {
   font-size: small;
   font-weight: bold;
