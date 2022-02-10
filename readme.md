@@ -8,4 +8,8 @@
 3. vue-app: vue.js로 구성
 
 ##
+이 페이지에 가면, 내용을 확인할 수 있습니다.
+https://skz1024.github.io/
+
+##
 사용된 음악은, Devilish(genesis) 중 일부 입니다.
