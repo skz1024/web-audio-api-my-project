@@ -8,4 +8,4 @@
 3. vue-app: vue.js로 구성
 
 ##
-사용된 음악은, Devilish(genesis) - stage 5 Seaside 입니다.
+사용된 음악은, Devilish(genesis) 중 일부 입니다.
