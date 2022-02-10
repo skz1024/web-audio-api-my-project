@@ -1,15 +1,16 @@
 <template>
-  <div class="time-box" 
-    @mousedown="eventMouseDown"
-    @mousemove="eventMouseMove"
-    @mouseup="eventMouseUp"
-    @touchstart="eventTouchStart"
-    @touchmove="eventTouchMove"
-    @touchEnd="eventTouchEnd"
-  >
+  <div class="time-box">
     <div class="time-box-name">{{timeBoxName}}</div>
     <div class="time-box-time">{{timeBoxTime}}</div>
-    <div class="time-box-background" ref="timeBox">
+    <div class="time-box-background" 
+      ref="timeBox"
+      @mousedown="eventMouseDown"
+      @mousemove="eventMouseMove"
+      @mouseup="eventMouseUp"
+      @touchstart="eventTouchStart"
+      @touchmove="eventTouchMove"
+      @touchEnd="eventTouchEnd"
+    >
       <div class="time-box-meter" ref="timeBoxMeter"></div>
       <div class="time-box-circle" ref="timeBoxCircle"></div>
     </div>
