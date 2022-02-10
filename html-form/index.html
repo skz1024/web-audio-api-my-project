@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>web audio api music player v0.2</title>
+  <title>web audio api music player v0.3</title>
   <link rel="stylesheet" href="index.css">
 </head>
 <body>
@@ -127,11 +127,11 @@ function createAudioBox () {
 
   // echo effect
   let echoGain = audioContext.createGain()
-  echoGain.gain.value = 0.5
+  echoGain.gain.value = 0.25
   let echoDelay = audioContext.createDelay(1)
   echoDelay.delayTime.value = 0.25
   let echoFeedbackGain = audioContext.createGain()
-  echoFeedbackGain.gain.value = 0.5
+  echoFeedbackGain.gain.value = 0.25
   let echoConvolver = audioContext.createConvolver()
   let echoConvolverGain = audioContext.createGain()
   echoConvolverGain.gain.value = 0.5
@@ -201,7 +201,11 @@ function createAudioBox () {
   }
   let setEchoPercent = function (type, percent) {
     if (percent >= 200) percent = 200
-    let inputGain = (percent / 100) * 0.5
+
+    let inputGain = (percent / 100)
+    if (type === 'echo' || type === 'feedback') {
+      inputGain *= 0.5
+    }
     setEcho(type, inputGain)
   }
 
@@ -257,13 +261,33 @@ timeBoxBackground.addEventListener('mousedown', (e) => {
     timeBoxMeterChange(e.offsetX)
   }
 })
-timeBoxBackground.addEventListener('mouseup', () => {
-  timeBoxBackground.isChange = false
+timeBoxBackground.addEventListener('touchstart', (e) => {
+  timeBoxBackground.isChange = true
+  // torchEvent는 offsetX, offsetY가 없기 때문에 event.target.getBoundingClientRect()를 통해
+  // 사각형의 값을 얻어온 후에, 다음과 같은 계산을 해야 합니다.
+  // offsetX = e.touches[0].clientX - rect.left
+  // 참고: 이 예제는 스크롤을 사용하지 않아서 pageOffsetX를 계산하지 않았습니다.
+  const rect = e.target.getBoundingClientRect()
+  if (timeBoxBackground.isChange) {
+    timeBoxMeterChange(e.touches[0].clientX - rect.left)
+  }
 })
 timeBoxBackground.addEventListener('mousemove', (e) => {
   if (timeBoxBackground.isChange) {
     timeBoxMeterChange(e.offsetX)
   }
+})
+timeBoxBackground.addEventListener('touchmove', (e) => {
+  const rect = e.target.getBoundingClientRect()
+  if (timeBoxBackground.isChange) {
+    timeBoxMeterChange(e.touches[0].clientX - rect.left)
+  }
+})
+timeBoxBackground.addEventListener('mouseup', () => {
+  timeBoxBackground.isChange = false
+})
+timeBoxBackground.addEventListener('touchend', (e) => {
+  timeBoxBackground.isChange = false
 })
 
 // 타임박스의 미터변경을 시도한다면, 오디오의 재생 위치가 변경됩니다.
@@ -309,14 +333,14 @@ function timeBoxNameDisplay () {
 
 // 오디오박스의 값을 자동으로 변경합니다.
 function audioBoxAutoChange () {
-  for (let i = 0; i < equalizerDiv.percent.length; i++) {
-    audioBox.setEqualizerPercent(i, equalizerDiv.percent[i])
+  for (let i = 0; i < equalizerBox.length; i++) {
+    audioBox.setEqualizerPercent(i, equalizerBox[i].getMeterPercent())
   }
 
-  audioBox.setEchoPercent('convolver', echoDiv.percent.convolver)
-  audioBox.setEchoPercent('feedback', echoDiv.percent.feedback)
-  audioBox.setEchoPercent('echo', echoDiv.percent.echo)
-  audioBox.setMasterGainPercent(masterDiv.percent.value)
+  audioBox.setEchoPercent('echo', echoBoxEcho.getMeterPercent())
+  audioBox.setEchoPercent('feedback', echoBoxFeedback.getMeterPercent())
+  audioBox.setEchoPercent('convolver', echoBoxConvolver.getMeterPercent())
+  audioBox.setMasterGainPercent(masterBox.getMeterPercent())
 }
 
 // 화면에 출력할 내용을 실시간으로 표시합니다. 
@@ -330,51 +354,82 @@ function animation () {
 requestAnimationFrame(animation)
 
 
-// 이퀄라이저 객체 변수를 생성합니다.
-// css 쿼리를 불러오는데 반복되는 구문이 많아 반복문으로 코드길이를 줄였습니다.
-let equalizerDiv = createEqualizer()
-function createEqualizer () {
-  const setHz = [70, 150, 300, 600, 1500, 3000, 6000, 12000] // 이퀄라이저의 기본 hz 값입니다.
-  let equalizerBox = [] // 상자 쿼리
-  let equalizerMeter = [] // 미터 쿼리
-  let equalizerCircle = [] // 서클 쿼리(원모양막대)
-  let equalizerPercent = []
+/*
+react와 vue.js 버전을 만들고나니 생각해봤는데, equalizer-box, echo-box, master-box 는 같은 형태이고,
+이것을 한개의 컴포넌트로 관리하여, 코드 길이를 절약하고 관리하기 쉬워졌습니다.
+그런데 javascript로도 이것을 구현할 수 있기 때문에, meterBox 자바스크립트 객체를 새로 만들게 되었습니다.
+*/
 
-  for (let i = 0; i < 8; i++) {
-    // 각 배열의 데이터에 해당 쿼리에 해당하는 div를 객체에 집어넣습니다.
-    equalizerBox.push(document.querySelector(`.equalizer-box-${setHz[i]}hz`))
-    equalizerMeter.push(document.querySelector(`.equalizer-box-${setHz[i]}hz-meter`))
-    equalizerCircle.push(document.querySelector(`.equalizer-box-${setHz[i]}hz-circle`))
-    equalizerPercent.push(50)
-    equalizerBox[i].isChange = false // 마우스 드래그로 값 변경이 가능한지 설정하는 변수
-    // this.isChange보다는 equalizerBox.isChange로 하는것이 더 나은 것 같습니다.
-    // javascript로만 작성했을 때는 차이가 없지만, react나 vue를 사용했을 때에는 this가 다르게 처리되는것으로 보임.
+// boxText를 사용한다면, HTML구조 자체를 많이 바꿔야 합니다.
+// 새로운 css 선택자도 추가해야합니다. 그렇기 때문에 이 코드에서는 boxText를 사용하지 않습니다.
+// css 선택자 방식으로 DOM 객체를 가져오므로, className 맨 앞에 . 이 추가로 붙습니다.
+function MeterBox (boxType, boxValue) {
+  let className = '.' + boxType + '-' + boxValue
+  let meterBox = document.querySelector(className) // 상자 쿼리
+  let meterBoxMeter = document.querySelector(className + '-' + 'meter') // 미터 쿼리
+  let meterBoxCircle = document.querySelector(className + '-' + 'circle') // 서클 쿼리(원모양막대)
+  let meterPercent = 50 // 미터의 퍼센트 값
+  let isChange = false
 
-    // 그 다음, addEventListner로 이벤트들을 전부 추가합니다.
-    equalizerBox[i].addEventListener('mousedown', (e) => {
-      equalizerBox[i].isChange = true
-      divBoxValueChange(equalizerBox[i], equalizerMeter[i], equalizerCircle[i], e.offsetY)
-      equalizerPercent[i] = parseFloat(equalizerMeter[i].style.height)
-    })
-    equalizerBox[i].addEventListener('mousemove', (e) => {
-      if (equalizerBox[i].isChange) {
-        divBoxValueChange(equalizerBox[i], equalizerMeter[i], equalizerCircle[i], e.offsetY)
-        equalizerPercent[i] = parseFloat(equalizerMeter[i].style.height)
-      }
-    })
-    equalizerBox[i].addEventListener('mouseup', (e) => {
-      equalizerBox[i].isChange = false
-    })
-  }
+  meterBox.addEventListener('mousedown', (e) => {
+    meterBox.isChange = true
+    divBoxValueChange(meterBox, meterBoxMeter, meterBoxCircle, e.offsetY)
+    meterPercent = parseFloat(meterBoxMeter.style.height)
+  })
+  meterBox.addEventListener('mousemove', (e) => {
+    if (meterBox.isChange) {
+      divBoxValueChange(meterBox, meterBoxMeter, meterBoxCircle, e.offsetY)
+      meterPercent = parseFloat(meterBoxMeter.style.height)
+    }
+  })
+  meterBox.addEventListener('mouseup', (e) => {
+    meterBox.isChange = false
+  })
+  meterBox.addEventListener('touchstart', (e) => {
+    meterBox.isChange = true
+    const rect = e.target.getBoundingClientRect()
+    divBoxValueChange(meterBox, meterBoxMeter, meterBoxCircle, event.touches[0].clientY - rect.top)
+    meterPercent = parseFloat(meterBoxMeter.style.height)
+  })
+  meterBox.addEventListener('touchmove', (e) => {
+    if (meterBox.isChange) {
+      const rect = e.target.getBoundingClientRect()
+      divBoxValueChange(meterBox, meterBoxMeter, meterBoxCircle, event.touches[0].clientY - rect.top)
+      meterPercent = parseFloat(meterBoxMeter.style.height)
+    }
+  })
+  meterBox.addEventListener('touchend', (e) => {
+    meterBox.isChange = false
+  })
 
   return {
-    hz: setHz,
-    box: equalizerBox,
-    meter: equalizerMeter,
-    circle: equalizerCircle,
-    percent: equalizerPercent
+    getMeterPercent: function () {
+      return meterPercent
+    }
   }
 }
+
+// 이퀄라이저 객체 변수를 생성합니다.
+// css 쿼리를 불러오는데 반복되는 구문이 많아 반복문으로 코드길이를 줄였습니다.
+let equalizerBox = createEqualizerBox()
+function createEqualizerBox () {
+  const setHz = [70, 150, 300, 600, 1500, 3000, 6000, 12000] // 이퀄라이저의 기본 hz 값입니다.
+  let meterBox = []
+  for (let i = 0; i < setHz.length; i++) {
+    meterBox.push(MeterBox('equalizer-box', setHz[i] + 'hz'))
+  }
+
+  return meterBox
+}
+
+// 에코 객체 변수, 불러오는 방식은 이퀄라이저랑 동일
+let echoBoxEcho = MeterBox('echo-box', 'echo')
+let echoBoxFeedback = MeterBox('echo-box', 'feedback')
+let echoBoxConvolver = MeterBox('echo-box', 'convolver')
+
+// 마스터 볼륨
+let masterBox = MeterBox('master-box', 'volume')
+
 
 // 사용자가 마우스클릭을 한 후에, div 객체의 css 크기 값을 변경합니다.
 function divBoxValueChange(box, meter, circle, mouseOffsetY) {
@@ -403,112 +458,5 @@ function divBoxValueChange(box, meter, circle, mouseOffsetY) {
 
   meter.style.height = percent + '%'
   circle.style.bottom = circlePercent + '%'
-}
-
-// 에코 설정 변수... 사실 equalizer랑 거의 똑같은 형태
-let echoDiv = createEchoDiv()
-function createEchoDiv () {
-  let convolverBox = document.querySelector('.echo-box-convolver')
-  let convolverMeter = document.querySelector('.echo-box-convolver-meter')
-  let convolverCircle = document.querySelector('.echo-box-convolver-circle')
-  let gainBox = document.querySelector('.echo-box-echo')
-  let gainMeter = document.querySelector('.echo-box-echo-meter')
-  let gainCircle = document.querySelector('.echo-box-echo-circle')
-  let feedbackGainBox = document.querySelector('.echo-box-feedback')
-  let feedbackGainMeter = document.querySelector('.echo-box-feedback-meter')
-  let feedbackGainCircle = document.querySelector('.echo-box-feedback-circle')
-  let percent = { convolver: 50, echo: 50, feedback: 50 }
-  convolverBox.isChange = false // 컨볼버 마우스 드래그시 조작 가능여부 체크용
-  gainBox.isChange = false
-  feedbackGainBox.isChange = false
-  // equalizer랑 방식은 비슷합니다.
-
-  convolverBox.addEventListener('mousedown', (e) => {
-    convolverBox.isChange = true
-    divBoxValueChange(convolverBox, convolverMeter, convolverCircle, e.offsetY)
-    percent.convolver = parseFloat(convolverMeter.style.height)
-  })
-  convolverBox.addEventListener('mousemove', (e) => {
-    if (convolverBox.isChange) {
-      divBoxValueChange(convolverBox, convolverMeter, convolverCircle, e.offsetY)
-      percent.convolver = parseFloat(convolverMeter.style.height)
-    }
-  })
-  convolverBox.addEventListener('mouseup', (e) => {
-    convolverBox.isChange = false
-  })
-
-  gainBox.addEventListener('mousedown', (e) => {
-    gainBox.isChange = true
-    divBoxValueChange(gainBox, gainMeter, gainCircle, e.offsetY)
-    percent.echo = parseFloat(gainMeter.style.height) 
-  })
-  gainBox.addEventListener('mousemove', (e) => {
-    if (gainBox.isChange) {
-      divBoxValueChange(gainBox, gainMeter, gainCircle, e.offsetY)
-      percent.echo = parseFloat(gainMeter.style.height)
-    }
-  })
-  gainBox.addEventListener('mouseup', () => {
-    gainBox.isChange = false
-  })
-
-  feedbackGainBox.addEventListener('mousedown', (e) => {
-    feedbackGainBox.isChange = true
-    divBoxValueChange(feedbackGainBox, feedbackGainMeter, feedbackGainCircle, e.offsetY)
-    percent.feedback = parseFloat(feedbackGainMeter.style.height)
-  })
-  feedbackGainBox.addEventListener('mousemove', (e) => {
-    if (feedbackGainBox.isChange) {
-      divBoxValueChange(feedbackGainBox, feedbackGainMeter, feedbackGainCircle, e.offsetY)
-      percent.feedback = parseFloat(feedbackGainMeter.style.height)
-    }
-  })
-  feedbackGainBox.addEventListener('mouseup', () => {
-    feedbackGainBox.isChange = false
-  })
-
-  return {
-    convolverBox: convolverBox,
-    convolverMeter: convolverMeter,
-    convolverCircle: convolverCircle,
-    gainBox: gainBox,
-    gainMeter: gainMeter,
-    gainCircle: gainCircle,
-    feedbackBox: feedbackGainBox,
-    feedbackMeter: feedbackGainMeter,
-    feedbackCircle: feedbackGainCircle,
-    percent: percent
-  }
-}
-
-let masterDiv = createMasterDiv()
-function createMasterDiv () {
-  let box = document.querySelector('.master-box-volume')
-  let meter = document.querySelector('.master-box-volume-meter')
-  let circle = document.querySelector('.master-box-volume-circle')
-  let percent = { value:50 }
-  box.isChange = false
-  box.addEventListener('mousedown', (e) => {
-    box.isChange = true
-    divBoxValueChange(box, meter, circle, e.offsetY)
-    percent.value = parseFloat(meter.style.height) 
-  })
-  box.addEventListener('mousemove', (e) => {
-    if (box.isChange) {
-      divBoxValueChange(box, meter, circle, e.offsetY)
-      percent.value = parseFloat(meter.style.height)
-    }
-  })
-  box.addEventListener('mouseup', () => {
-    box.isChange = false
-  })
-
-  return {
-    box: box,
-    meter: meter,
-    circle: circle,
-    percent: percent
-  }
 }
 </script>

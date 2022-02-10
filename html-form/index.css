@@ -57,6 +57,7 @@ div.time-box-name {
   height: 5vh;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
 div.time-box-time {
   color: blueviolet;
