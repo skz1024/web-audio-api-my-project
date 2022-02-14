@@ -1,8 +1,19 @@
 <template>
   <div class="main-box">
-    <TimeBox :timeBoxName="timeBoxName" :timeBoxTime="timeBoxTime" :audioPercent="audioPercent" @changeAudioPercent="changeAudioPercent" />
-    <MenuBox @audioPlay="audioPlay" @audioPause="audioPause" @audioStop="audioStop"/>
-    <AdvancBox @audioBoxChange="audioBoxChange"></AdvancBox>
+    <TimeBox 
+      :timeBoxName="timeBoxName" 
+      :timeBoxTime="timeBoxTime" 
+      :audioPercent="audioPercent" 
+      @changeAudioPercent="changeAudioPercent" 
+    />
+    <MenuBox 
+      @audioPlay="audioPlay" 
+      @audioPause="audioPause" 
+      @audioStop="audioStop"
+    />
+    <AdvanceBox 
+      @audioBoxChange="audioBoxChange"
+    />
   </div>
 </template>
 
@@ -11,7 +22,7 @@
 // vue 파일을 사용하려면 먼저 import를 해야 합니다. (vue 파일이 있다면 자동완성으로도 지원됨)
 import TimeBox from './components/TimeBox.vue'
 import MenuBox from './components/MenuBox.vue'
-import AdvancBox from './components/AdvanceBox.vue'
+import AdvanceBox from './components/AdvanceBox.vue'
 
 let fileName = 'devilish 07 - Stage 4 - Air Passage.mp3'
 let audio = new Audio(fileName)
@@ -157,7 +168,7 @@ export default {
   },
   components: {
     TimeBox,
-    AdvancBox,
+    AdvanceBox,
     MenuBox
   },
   mounted() {
